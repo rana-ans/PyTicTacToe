@@ -2,6 +2,8 @@ import tkinter as tk
 from tkinter import messagebox
 import random
 
+Score = [0, 0]
+
 class TicTacToe:
     def __init__(self, root):
         self.root = root
@@ -9,13 +11,11 @@ class TicTacToe:
         self.current_player = 'X'  # Player is 'X', computer is 'O'
         self.board = [[' ' for _ in range(3)] for _ in range(3)]
         self.buttons = [[None for _ in range(3)] for _ in range(3)]
-        self.player_score = 0
-        self.computer_score = 0
+        self.score_label = tk.Label(self.root, text=f"You {Score[0]} - {Score[1]} Computer")
+        self.score_label.grid(row=3, column=1)
         self.create_board()
 
     def create_board(self):
-        score_label = tk.Label(self.root, text=f"You {self.player_score} - {self.computer_score} Computer")
-        score_label.grid(row=3, column=1)
         for row in range(3):
             for col in range(3):
                 button = tk.Button(self.root, text=' ', font=('Arial', 40), width=5, height=2,
@@ -28,6 +28,7 @@ class TicTacToe:
             self.board[row][col] = self.current_player
             self.buttons[row][col].config(text=self.current_player)
             if self.check_win(self.current_player):
+                Score[0] +=1
                 messagebox.showinfo("Tic Tac Toe", f"Player {self.current_player} wins!")
                 self.reset_game()
             elif self.check_draw():
@@ -44,6 +45,7 @@ class TicTacToe:
             self.board[row][col] = 'O'
             self.buttons[row][col].config(text='O')
             if self.check_win('O'):
+                Score[1] +=1
                 messagebox.showinfo("Tic Tac Toe", "Computer wins!")
                 self.reset_game()
             elif self.check_draw():
@@ -83,22 +85,18 @@ class TicTacToe:
         # Check rows
         for row in self.board:
             if all([cell == player for cell in row]):
-                self.player_score += 1
                 return True
 
         # Check columns
         for col in range(3):
             if all([self.board[row][col] == player for row in range(3)]):
-                self.player_score += 1
                 return True
 
         # Check diagonals
         if all([self.board[i][i] == player for i in range(3)]) or \
            all([self.board[i][2 - i] == player for i in range(3)]):
-            self.player_score += 1
             return True
 
-        self.computer_score += 1
         return False
 
     def check_draw(self):
@@ -110,6 +108,7 @@ class TicTacToe:
         for row in range(3):
             for col in range(3):
                 self.buttons[row][col].config(text=' ')
+        self.score_label.config(text=f"You {Score[0]} - {Score[1]} Computer")
 
 if __name__ == "__main__":
     root = tk.Tk()
