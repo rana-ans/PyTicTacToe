@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Toe</title>
+    <style>
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-gap: 5px;
+            margin: 20px auto;
+            width: 320px;
+        }
+        .cell {
+            width: 100px;
+            height: 100px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid #000;
+            font-size: 40px;
+            cursor: pointer;
+        }
+        .score, .winner, .leaderboard, .username {
+            text-align: center;
+            font-size: 24px;
+            margin-top: 10px;
+        }
+        .leaderboard ul {
+            list-style: none;
+            padding: 0;
+        }
+        .username {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="username">
+        <label for="username">Username: </label>
+        <input type="text" id="username" placeholder="Enter your name">
+        <button onclick="startGame()">Start Game</button>
+    </div>
+    <div class="score" id="score">You 0 - 0 Computer</div>
+    <div class="board" id="board"></div>
+    <div class="winner" id="winner"></div>
+    <div class="leaderboard" id="leaderboard">
+        <h3>Top 5 Most Wins</h3>
+        <ul id="leaderboard-list"></ul>
+    </div>
+    <script>
+        let Score = [0, 0];
+        let currentPlayer = 'X';
+        let board = [[' ', ' ', ' '], [' ', ' ', ' '], [' ', ' ', ' ']];
+        let leaderboard = JSON.parse(localStorage.getItem('leaderboard')) || [];
+        let username = '';
+
+        const scoreElement = document.getElementById('score');
+        const boardElement = document.getElementById('board');
+        const winnerElement = document.getElementById('winner');
+        const leaderboardList = document.getElementById('leaderboard-list');
+
+        function startGame() {
+            username = document.getElementById('username').value.trim();
+            if (username === '') {
+                alert('Please enter a username to start the game.');
+                return;
+            }
+            document.querySelector('.username').style.display = 'none';
+            document.querySelector('.score').style.display = 'block';
+            document.querySelector('.board').style.display = 'grid';
+            createBoard();
+            displayLeaderboard();
+        }
+
+        function createBoard() {
+            boardElement.innerHTML = '';
+            for (let row = 0; row < 3; row++) {
+                for (let col = 0; col < 3; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.addEventListener('click', () => onCellClick(row, col));
+                    boardElement.appendChild(cell);
+                }
+            }
+        }
+
+        function onCellClick(row, col) {
+            if (board[row][col] === ' ' && currentPlayer === 'X') {
+                board[row][col] = currentPlayer;
+                updateBoard();
+                if (checkWin(currentPlayer)) {
+                    Score[0]++;
+                    updateLeaderboard(username);
+                    winnerElement.innerText = `You won!`;
+                    resetGame();
+                } else if (checkDraw()) {
+                    winnerElement.innerText = 'The game was a draw!';
+                    resetGame();
+                } else {
+                    currentPlayer = 'O';
+                    setTimeout(computerMove, 500);
+                }
+            }
+        }
+
+        function computerMove() {
+            const move = findBestMove();
+            if (move) {
+                const [row, col] = move;
+                board[row][col] = 'O';
+                updateBoard();
+                if (checkWin('O')) {
+                    Score[1]++;
+                    updateLeaderboard('Computer');
+                    winnerElement.innerText = 'Computer won!';
+                    resetGame();
+                } else if (checkDraw()) {
+                    winnerElement.innerText = 'The game was a draw!';
+                    resetGame();
+                } else {
+                    currentPlayer = 'X';
+                }
+            }
+        }
+
+        function findBestMove() {
+            for (let row = 0; row < 3; row++) {
+                for (let col = 0; col < 3; col++) {
+                    if (board[row][col] === ' ') {
+                        board[row][col] = 'O';
+                        if (checkWin('O')) {
+                            board[row][col] = ' ';
+                            return [row, col];
+                        }
+                        board[row][col] = ' ';
+                    }
+                }
+            }
+
+            for (let row = 0; row < 3; row++) {
+                for (let col = 0; col < 3; col++) {
+                    if (board[row][col] === ' ') {
+                        board[row][col] = 'X';
+                        if (checkWin('X')) {
+                            board[row][col] = ' ';
+                            return [row, col];
+                        }
+                        board[row][col] = ' ';
+                    }
+                }
+            }
+            const emptyCells = [];
+            for (let row = 0; row < 3; row++) {
+                for (let col = 0; col < 3; col++) {
+                    if (board[row][col] === ' ') {
+                        emptyCells.push([row, col]);
+                    }
+                }
+            }
+
+            if (emptyCells.length > 0) {
+                return emptyCells[Math.floor(Math.random() * emptyCells.length)];
+            }
+            return null;
+        }
+
+        function checkWin(player) {
+            for (let row = 0; row < 3; row++) {
+                if (board[row].every(cell => cell === player)) return true;
+            }
+
+            for (let col = 0; col < 3; col++) {
+                if (board.every(row => row[col] === player)) return true;
+            }
+
+            if (board[0][0] === player && board[1][1] === player && board[2][2] === player) return true;
+            if (board[0][2] === player && board[1][1] === player && board[2][0] === player) return true;
+
+            return false;
+        }
+
+        function checkDraw() {
+            return board.flat().every(cell => cell === 'X' || cell === 'O');
+        }
+
+        function updateBoard() {
+            const cells = document.getElementsByClassName('cell');
+            for (let i = 0; i < cells.length; i++) {
+                const row = Math.floor(i / 3);
+                const col = i % 3;
+                cells[i].innerText = board[row][col];
+            }
+            scoreElement.innerText = `You ${Score[0]} - ${Score[1]} Computer`;
+        }
+
+        function resetGame() {
+            setTimeout(() => {
+                currentPlayer = 'X';
+                board = [[' ', ' ', ' '], [' ', ' ', ' '], [' ', ' ', ' ']];
+                updateBoard();
+                // winnerElement.innerText = '';
+            }, 1000);
+        }
+
+        function updateLeaderboard(winner) {
+            let player = leaderboard.find(p => p.name === winner);
+            if (player) {
+                player.wins++;
+            } else {
+                leaderboard.push({ name: winner, wins: 1 });
+            }
+            leaderboard.sort((a, b) => b.wins - a.wins);
+            leaderboard = leaderboard.slice(0, 5);
+            localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
+            displayLeaderboard();
+        }
+
+        function displayLeaderboard() {
+            leaderboardList.innerHTML = '';
+            leaderboard.forEach(player => {
+                const listItem = document.createElement('li');
+                listItem.textContent = `${player.name}: ${player.wins} wins`;
+                leaderboardList.appendChild(listItem);
+            });
+        }
+    </script>
+</body>
+</html>
